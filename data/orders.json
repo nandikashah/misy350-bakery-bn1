@@ -79,5 +79,14 @@
         "quantity": 19,
         "status": "Placed",
         "total": 37.81
+    },
+    {
+        "id": "d09befb6-63da-4491-ad0c-0c60a8c9d53e",
+        "customer_email": "customer@bakery.com",
+        "item_id": 1,
+        "item_name": "Danish",
+        "quantity": 1,
+        "status": "Placed",
+        "total": 3.0
     }
 ]

@@ -578,6 +578,20 @@ Analyze the current project structure of my Streamlit bakery app before making a
 >
 > Include a recommended structure, what each layer should own, current structural problems, and what files/behaviors must be protected. Save the plan as a dated version, such as "Structural Improvement Plan - Version 1 - 2026-05-10." Include this exact prompt under "origin_prompt.md" for historical recordkeeping.
 
+---
+
+## Feature and UI Improvement Plan Prompt
+
+> Create a separate Feature and UI Improvement Plan for my Streamlit bakery app after structural changes are complete. Do not implement changes yet.
+>
+> Use the feature analysis to plan improvements for missing features, UI design, Streamlit tabs/pages, routing, st.session_state, user actions, feedback messages, and error handling.
+>
+> Pay special attention to the Add to Cart and Place Order workflow. Right now, clicking add to cart sends a message that tells the user to manually go to the cart tab and it should be smooth instead.
+>
+> Use ideas from the class practice app about viewing and updating excuse absence requests, especially the pattern of viewing existing records and updating/adding records in a clean workflow.
+>
+> Include customer improvements, owner improvements, AI assistant improvements, and UI/design improvements. Create the plan as a dated version, such as “Feature and UI Improvement Plan - Version 1 - 2026-05-10.” Include this exact prompt under origin_prompt.md in the correct order for historical recordkeeping.
+
 ### AI Response
 
 The assistant created a comprehensive structural improvement plan document saved as `Structural Improvement Plan - Version 1 - 2026-05-10.md`. 

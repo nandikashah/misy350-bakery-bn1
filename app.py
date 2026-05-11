@@ -18,6 +18,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# WITH HELP FROM AI TO CREATE A MORE AESTHETICALLY PLEASING UI
 st.markdown("""
 <style>
 
