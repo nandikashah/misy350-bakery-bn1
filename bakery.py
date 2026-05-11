@@ -487,9 +487,3 @@ if st.session_state['logged_in']:
             st.session_state["page"] = "login"
             time.sleep(2)
             st.rerun()
-
-
-
-
-
-

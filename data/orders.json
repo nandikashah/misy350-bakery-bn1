@@ -32,7 +32,7 @@
         "item_id": 1,
         "item_name": "Danish",
         "quantity": 1,
-        "status": "Placed",
+        "status": "Completed",
         "total": 3.0
     },
     {
@@ -50,7 +50,34 @@
         "item_id": 1,
         "item_name": "Danish",
         "quantity": 1,
-        "status": "Placed",
+        "status": "Cancelled",
         "total": 3.0
+    },
+    {
+        "id": "c0e4736a-e9b7-4347-a25d-8b59eb4f494d",
+        "customer_email": "customer@bakery.com",
+        "item_id": 3,
+        "item_name": "Cake",
+        "quantity": 1,
+        "status": "Completed",
+        "total": 5.0
+    },
+    {
+        "id": "ec827066-97e0-42a3-a9fc-c45b328bc40d",
+        "customer_email": "customer@bakery.com",
+        "item_id": 1,
+        "item_name": "Danish",
+        "quantity": 1,
+        "status": "Cancelled",
+        "total": 3.0
+    },
+    {
+        "id": "e3f97a01-99d8-455d-bf56-636e6a5d73a6",
+        "customer_email": "customer@bakery.com",
+        "item_id": 5,
+        "item_name": "Brownie",
+        "quantity": 19,
+        "status": "Placed",
+        "total": 37.81
     }
 ]

@@ -1,0 +1,27 @@
+[
+    {
+        "user_email": "customer@bakery.com",
+        "user_message": "hi",
+        "ai_response": "Hello! How can I help you today?."
+    },
+    {
+        "user_email": "customer@bakery.com",
+        "user_message": "How do I place an order?",
+        "ai_response": "To place an order, navigate to the Browse Items tab and place your order with your selected item and quantity."
+    },
+    {
+        "user_email": "customer@bakery.com",
+        "user_message": "Can I cancel a placed order?",
+        "ai_response": "Yes! Navigate to the Cancel Order tab to remove items that have been previously ordered."
+    },
+    {
+        "user_email": "customer@bakery.com",
+        "user_message": "How do I place an order?",
+        "ai_response": "AI assistant is currently unavailable because the OpenAI API quota has been exceeded."
+    },
+    {
+        "user_email": "customer@bakery.com",
+        "user_message": "Can I cancel a placed order?",
+        "ai_response": "AI assistant is currently unavailable because the OpenAI API quota has been exceeded."
+    }
+]

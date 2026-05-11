@@ -3,7 +3,7 @@
         "item_id": 1,
         "name": "Danish",
         "price": 3.0,
-        "stock": 45
+        "stock": 48
     },
     {
         "item_id": 2,
@@ -15,7 +15,7 @@
         "item_id": 3,
         "name": "Cake",
         "price": 5.0,
-        "stock": 11
+        "stock": 10
     },
     {
         "item_id": 4,
@@ -27,6 +27,6 @@
         "item_id": 5,
         "name": "Brownie",
         "price": 1.99,
-        "stock": 19
+        "stock": 10
     }
 ]

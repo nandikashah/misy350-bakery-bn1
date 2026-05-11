@@ -1,12 +1,53 @@
 import uuid
 from typing import List, Dict, Optional
+from shared import constants
 
 
 class BakeryManager:
-    def __init__(self, inventory: List[Dict], users: List[Dict], orders: List[Dict]) -> None:
-        self.inventory = inventory
-        self.users = users
-        self.orders = orders
+    """
+    Central business logic manager for bakery operations.
+    
+    Manages:
+    - User authentication and registration
+    - Inventory management and stock tracking
+    - Shopping cart operations
+    - Order lifecycle (creation, updates, cancellation)
+    - Data persistence via store
+    
+    This service coordinates between the UI layer and the data persistence layer.
+    It maintains in-memory copies of inventory, users, and orders for fast access.
+    Changes are persisted to JSON files via the store.
+    
+    Note: In future refactoring, this could be split into domain services
+    (UserService, InventoryService, OrderService, CartService) with more granular
+    responsibilities and better error handling using exceptions.
+    """
+    
+    def __init__(self, store) -> None:
+        """
+        Initialize BakeryManager with a data store.
+        
+        Args:
+            store: BakeryStore instance for data persistence
+        """
+        self.store = store
+        self.inventory = self.store.load_inventory()
+        self.users = self.store.load_users()
+        self.orders = self.store.load_orders()
+
+    def save_inventory(self):
+        self.store.save_inventory(self.inventory)
+
+    def save_orders(self):
+        self.store.save_orders(self.orders)
+
+    def save_users(self):
+        self.store.save_users(self.users)
+
+    def save_all(self):
+        self.save_inventory()
+        self.save_orders()
+        self.save_users()
 
     def find_user(self, email: str, password: str) -> Optional[Dict]:
         for user in self.users:
@@ -14,24 +55,24 @@ class BakeryManager:
                 return user
         return None
 
-    def register_customer(self, full_name: str, email: str, password: str) -> Dict:
+    def register_customer(self, full_name: str, email: str, password: str):
         if not full_name or not email or not password:
-            raise ValueError("Please fill in all fields.")
+            return "Please fill in all fields."
 
         for user in self.users:
             if user["email"].lower() == email.lower():
-                raise ValueError("An account with that email already exists.")
+                return "An account with that email already exists."
 
         new_user = {
             "id": str(uuid.uuid4()),
             "full_name": full_name,
             "email": email,
             "password": password,
-            "role": "Customer"
+            "role": constants.USER_ROLE_CUSTOMER
         }
 
         self.users.append(new_user)
-        return new_user
+        return "Success"
 
     def all_inventory(self) -> List[Dict]:
         return list(self.inventory)
@@ -51,9 +92,9 @@ class BakeryManager:
                 return item
         return None
 
-    def add_to_cart(self, cart: List[Dict], selected_item: Dict, quantity: int) -> None:
+    def add_to_cart(self, cart: List[Dict], selected_item: Dict, quantity: int):
         if quantity > selected_item["stock"]:
-            raise ValueError("Not enough stock available.")
+            return "Not enough stock available."
 
         cart.append({
             "item_id": selected_item["item_id"],
@@ -62,15 +103,17 @@ class BakeryManager:
             "quantity": quantity
         })
 
-    def checkout(self, cart: List[Dict], user_email: str) -> None:
+        return "Success"
+
+    def checkout(self, cart: List[Dict], user_email: str):
         for cart_item in cart:
             item = self.find_item_by_id(cart_item["item_id"])
 
             if item is None:
-                raise ValueError("Item not found.")
+                return "Item not found."
 
             if cart_item["quantity"] > item["stock"]:
-                raise ValueError("Not enough stock available.")
+                return "Not enough stock available."
 
             item["stock"] -= cart_item["quantity"]
 
@@ -80,9 +123,11 @@ class BakeryManager:
                 "item_id": cart_item["item_id"],
                 "item_name": cart_item["item_name"],
                 "quantity": cart_item["quantity"],
-                "status": "Placed",
+                "status": constants.ORDER_STATUS_PLACED,
                 "total": round(cart_item["price"] * cart_item["quantity"], 2)
             })
+
+        return "Success"
 
     def find_orders_by_customer(self, email: str) -> List[Dict]:
         return [order for order in self.orders if order["customer_email"] == email]
@@ -90,55 +135,58 @@ class BakeryManager:
     def find_placed_orders_by_customer(self, email: str) -> List[Dict]:
         return [
             order for order in self.orders
-            if order["customer_email"] == email and order["status"] == "Placed"
+            if order["customer_email"] == email and order["status"] == constants.ORDER_STATUS_PLACED
         ]
 
-    def update_order_quantity(self, order_id: str, new_quantity: int) -> None:
+    def update_order_quantity(self, order_id: str, new_quantity: int):
         for order in self.orders:
             if order["id"] == order_id:
                 item = self.find_item_by_name(order["item_name"])
 
                 if item is None:
-                    raise ValueError("Item not found.")
+                    return "Item not found."
 
                 item["stock"] += order["quantity"]
 
                 if new_quantity > item["stock"]:
                     item["stock"] -= order["quantity"]
-                    raise ValueError("Not enough stock available.")
+                    return "Not enough stock available."
 
                 item["stock"] -= new_quantity
                 order["quantity"] = new_quantity
                 order["total"] = round(new_quantity * item["price"], 2)
-                return
 
-        raise ValueError("Order not found.")
+                return "Success"
 
-    def cancel_order(self, order_id: str) -> None:
+        return "Order not found."
+
+    def cancel_order(self, order_id: str):
         for order in self.orders:
             if order["id"] == order_id:
-                order["status"] = "Cancelled"
+                order["status"] = constants.ORDER_STATUS_CANCELLED
 
                 item = self.find_item_by_name(order["item_name"])
                 if item:
                     item["stock"] += order["quantity"]
 
-                return
+                return "Success"
 
-        raise ValueError("Order not found.")
+        return "Order not found."
 
-    def restock_inventory(self, item_name: str, add_quantity: int) -> None:
+    def restock_inventory(self, item_name: str, add_quantity: int):
         item = self.find_item_by_name(item_name)
 
         if item is None:
-            raise ValueError("Item not found.")
+            return "Item not found."
 
         item["stock"] += add_quantity
 
-    def update_order_status(self, order_id: str, new_status: str) -> None:
+        return "Success"
+
+    def update_order_status(self, order_id: str, new_status: str):
         for order in self.orders:
             if order["id"] == order_id:
                 order["status"] = new_status
-                return
+                return "Success"
 
-        raise ValueError("Order not found.")
+        return "Order not found."
