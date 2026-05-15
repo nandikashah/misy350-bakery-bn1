@@ -47,13 +47,12 @@ class SessionStateManager:
         if constants.SESSION_KEY_CART not in st.session_state:
             st.session_state[constants.SESSION_KEY_CART] = []
         
-        # Transient flags
-        if constants.SESSION_KEY_ORDER_SUCCESS not in st.session_state:
-            st.session_state[constants.SESSION_KEY_ORDER_SUCCESS] = False
-        
-        if constants.SESSION_KEY_AI_MESSAGES not in st.session_state:
-            st.session_state[constants.SESSION_KEY_AI_MESSAGES] = []
-    
+        if constants.SESSION_KEY_ACTIVE_CUSTOMER_TAB not in st.session_state:
+            st.session_state[constants.SESSION_KEY_ACTIVE_CUSTOMER_TAB] = constants.CUSTOMER_TAB_BROWSE
+
+        if constants.SESSION_KEY_CART_REVIEW not in st.session_state:
+            st.session_state[constants.SESSION_KEY_CART_REVIEW] = False
+
     @staticmethod
     def get_logged_in() -> bool:
         """Get login status."""
@@ -93,10 +92,30 @@ class SessionStateManager:
     def set_page(page: str) -> None:
         """Set current page."""
         st.session_state[constants.SESSION_KEY_PAGE] = page
+
+    @staticmethod
+    def get_active_customer_tab() -> str:
+        """Get active customer dashboard tab."""
+        return st.session_state.get(constants.SESSION_KEY_ACTIVE_CUSTOMER_TAB, constants.CUSTOMER_TAB_BROWSE)
+
+    @staticmethod
+    def set_active_customer_tab(tab: str) -> None:
+        """Set the active customer dashboard tab."""
+        st.session_state[constants.SESSION_KEY_ACTIVE_CUSTOMER_TAB] = tab
+
+    @staticmethod
+    def is_cart_review() -> bool:
+        """Get cart review mode."""
+        return st.session_state.get(constants.SESSION_KEY_CART_REVIEW, False)
+
+    @staticmethod
+    def set_cart_review(value: bool) -> None:
+        """Set cart review mode."""
+        st.session_state[constants.SESSION_KEY_CART_REVIEW] = value
     
     @staticmethod
     def get_cart() -> list:
-        """Get current cart items."""
+        """Get cart items."""
         return st.session_state.get(constants.SESSION_KEY_CART, [])
     
     @staticmethod
@@ -147,5 +166,7 @@ class SessionStateManager:
         st.session_state[constants.SESSION_KEY_ROLE] = None
         st.session_state[constants.SESSION_KEY_PAGE] = constants.PAGE_LOGIN
         st.session_state[constants.SESSION_KEY_CART] = []
+        st.session_state[constants.SESSION_KEY_ACTIVE_CUSTOMER_TAB] = constants.CUSTOMER_TAB_BROWSE
+        st.session_state[constants.SESSION_KEY_CART_REVIEW] = False
         st.session_state[constants.SESSION_KEY_ORDER_SUCCESS] = False
         st.session_state[constants.SESSION_KEY_AI_MESSAGES] = []

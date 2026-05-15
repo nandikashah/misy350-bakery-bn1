@@ -3,15 +3,13 @@ import time
 
 from ui.state_manager import SessionStateManager
 from shared import constants
+from shared.utils import validate_email, validate_required_field
 
 
 class BakeryDashboard:
     
     def __init__(self, manager) -> None:
         self.manager = manager
-
-    def _valid_email(self, email: str) -> bool:
-        return "@" in email and "." in email
 
     def main(self):
 
@@ -25,11 +23,14 @@ class BakeryDashboard:
 
             if st.button("Log In", key="login_btn", type="primary", use_container_width=True):
 
-                if email_input == "" or password_input == "":
-                    st.error("Please enter both email and password")
-                elif not self._valid_email(email_input):
-                    st.error("Please enter a valid email address.")
-                else:
+                try:
+                    validate_required_field(email_input, "Email")
+                    validate_required_field(password_input, "Password")
+                    
+                    if not validate_email(email_input):
+                        st.error("Please enter a valid email address.")
+                        return
+                        
                     with st.spinner("Logging in..."):
                         time.sleep(1)
 
@@ -47,6 +48,9 @@ class BakeryDashboard:
 
                         else:
                             st.error("Invalid credentials")
+                            
+                except Exception as e:
+                    st.error(str(e))
 
 
         st.subheader("New Customer Account")
@@ -58,7 +62,7 @@ class BakeryDashboard:
 
             if st.button("Create Account", key="register_btn", type="primary", use_container_width=True):
 
-                if not self._valid_email(new_email):
+                if not validate_email(new_email):
                     st.error("Please enter a valid email address.")
                 else:
                     result = self.manager.register_customer(

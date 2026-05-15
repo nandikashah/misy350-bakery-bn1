@@ -33,5 +33,35 @@
         "user_email": "customer@bakery.com",
         "user_message": "Can I cancel a placed order?",
         "ai_response": "AI assistant is currently unavailable because the OpenAI API quota has been exceeded."
+    },
+    {
+        "user_email": "customer@bakery.com",
+        "user_message": "How do I place an order?",
+        "ai_response": "AI assistant is currently unavailable because the OpenAI API quota has been exceeded."
+    },
+    {
+        "user_email": "customer@bakery.com",
+        "user_message": "How do I place an order?",
+        "ai_response": "AI assistant is currently unavailable because the OpenAI API quota has been exceeded."
+    },
+    {
+        "user_email": "customer@bakery.com",
+        "user_message": "How do I place an order?",
+        "ai_response": "AI assistant is currently unavailable because the OpenAI API quota has been exceeded."
+    },
+    {
+        "user_email": "customer@bakery.com",
+        "user_message": "What items are available right now?",
+        "ai_response": "AI assistant is currently unavailable because the OpenAI API quota has been exceeded."
+    },
+    {
+        "user_email": "customer@bakery.com",
+        "user_message": "How do I place an order?",
+        "ai_response": "AI assistant is currently unavailable because the OpenAI API quota has been exceeded."
+    },
+    {
+        "user_email": "customer@bakery.com",
+        "user_message": "Can I cancel a placed order?",
+        "ai_response": "AI assistant is currently unavailable because the OpenAI API quota has been exceeded."
     }
 ]

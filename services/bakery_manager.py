@@ -1,6 +1,7 @@
 import uuid
 from typing import List, Dict, Optional
 from shared import constants
+from shared.utils import generate_order_number, prepare_order_data, validate_order_status_transition, validate_email, validate_password, validate_name, validate_required_field
 
 
 class BakeryManager:
@@ -56,23 +57,34 @@ class BakeryManager:
         return None
 
     def register_customer(self, full_name: str, email: str, password: str):
-        if not full_name or not email or not password:
-            return "Please fill in all fields."
+        try:
+            validate_required_field(full_name, "Full name")
+            validate_required_field(email, "Email")
+            validate_required_field(password, "Password")
+            validate_name(full_name)
 
-        for user in self.users:
-            if user["email"].lower() == email.lower():
-                return "An account with that email already exists."
+            if not validate_email(email):
+                return "Please enter a valid email address."
 
-        new_user = {
-            "id": str(uuid.uuid4()),
-            "full_name": full_name,
-            "email": email,
-            "password": password,
-            "role": constants.USER_ROLE_CUSTOMER
-        }
+            validate_password(password)
 
-        self.users.append(new_user)
-        return "Success"
+            for user in self.users:
+                if user["email"].lower() == email.lower():
+                    return "An account with that email already exists."
+
+            new_user = {
+                "id": str(uuid.uuid4()),
+                "full_name": full_name,
+                "email": email,
+                "password": password,  # TODO: Hash password in future phase
+                "role": constants.USER_ROLE_CUSTOMER
+            }
+
+            self.users.append(new_user)
+            return "Success"
+
+        except Exception as e:
+            return str(e)
 
     def all_inventory(self) -> List[Dict]:
         return list(self.inventory)
@@ -106,6 +118,9 @@ class BakeryManager:
         return "Success"
 
     def checkout(self, cart: List[Dict], user_email: str):
+        order_number = generate_order_number(self.orders)
+        transaction_id = str(uuid.uuid4())
+
         for cart_item in cart:
             item = self.find_item_by_id(cart_item["item_id"])
 
@@ -117,15 +132,10 @@ class BakeryManager:
 
             item["stock"] -= cart_item["quantity"]
 
-            self.orders.append({
-                "id": str(uuid.uuid4()),
-                "customer_email": user_email,
-                "item_id": cart_item["item_id"],
-                "item_name": cart_item["item_name"],
-                "quantity": cart_item["quantity"],
-                "status": constants.ORDER_STATUS_PLACED,
-                "total": round(cart_item["price"] * cart_item["quantity"], 2)
-            })
+            order_data = prepare_order_data(cart_item, user_email, order_number, transaction_id)
+            order_data["id"] = str(uuid.uuid4())
+
+            self.orders.append(order_data)
 
         return "Success"
 
@@ -186,7 +196,12 @@ class BakeryManager:
     def update_order_status(self, order_id: str, new_status: str):
         for order in self.orders:
             if order["id"] == order_id:
-                order["status"] = new_status
-                return "Success"
+                # Validate status transition before updating
+                try:
+                    validate_order_status_transition(order["status"], new_status)
+                    order["status"] = new_status
+                    return "Success"
+                except Exception as e:
+                    return str(e)
 
         return "Order not found."

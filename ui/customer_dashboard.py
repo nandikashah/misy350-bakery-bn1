@@ -3,6 +3,7 @@ import time
 from services.ai_assistant import BakeryAIAssistant
 from ui.state_manager import SessionStateManager
 from shared import constants
+from shared.utils import format_inventory_label, format_price, calculate_cart_total, get_order_label
 
 
 class CustomerDashboard:
@@ -29,14 +30,24 @@ class CustomerDashboard:
         st.markdown(f"## Welcome, {user['full_name']}!")
         st.markdown("#### This is the Customer Dashboard")
 
+        active_tab = SessionStateManager.get_active_customer_tab()
+        if active_tab == constants.CUSTOMER_TAB_CART:
+            st.markdown("### Cart")
+            self.cart_page(user)
+            if st.button("Return to Browse", key="return_to_browse"):
+                SessionStateManager.set_active_customer_tab(constants.CUSTOMER_TAB_BROWSE)
+                SessionStateManager.set_cart_review(False)
+                st.rerun()
+            return
+
         tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "Browse Items",
-    "Cart",
-    "My Orders",
-    "Cancel Order",
-    "AI Assistant"
-])
-        
+            "Browse Items",
+            "Cart",
+            "My Orders",
+            "Cancel Order",
+            "AI Assistant"
+        ])
+
         with tab1:
             self.browse_items()
 
@@ -61,13 +72,15 @@ class CustomerDashboard:
 
         with col_cart_btn:
             if st.button("Go to Cart", key="goto_cart_btn"):
-                st.info("Click on the Cart tab at the top to view your cart.")
+                SessionStateManager.set_active_customer_tab(constants.CUSTOMER_TAB_CART)
+                SessionStateManager.set_cart_review(False)
+                st.rerun()
 
         selected_item = st.selectbox(
             "Items",
             options=self.manager.inventory,
             key="inventory_selector",
-            format_func=lambda item: f"{item['name']} — ${item['price']:.2f} ({item['stock']} in stock)"
+            format_func=lambda item: format_inventory_label(item['name'], item['price'], item['stock'])
         )
 
         if selected_item["stock"] == 0:
@@ -108,18 +121,17 @@ class CustomerDashboard:
             st.info("Your cart is empty.")
             return
 
-        total_cost = 0
+        total_cost = calculate_cart_total(cart)
 
         for idx, item in enumerate(cart):
             item_total = item["price"] * item["quantity"]
-            total_cost += item_total
 
             stock_item = self.manager.find_item_by_id(item["item_id"])
             current_stock = stock_item["stock"] if stock_item else 0
 
             col_name, col_qty, col_price, col_update, col_remove = st.columns([3, 2, 2, 1, 1])
             col_name.markdown(f"**{item['item_name']}**")
-            col_name.write(f"Price: ${item['price']:.2f}")
+            col_name.write(f"Price: {format_price(item['price'])}")
             col_name.write(f"Available: {current_stock}")
 
             quantity = col_qty.number_input(
@@ -130,7 +142,7 @@ class CustomerDashboard:
                 key=f"cart_qty_{idx}"
             )
 
-            col_price.write(f"Item Total: ${item_total:.2f}")
+            col_price.write(f"Item Total: {format_price(item_total)}")
 
             if col_update.button("Update", key=f"update_cart_{idx}"):
                 if quantity > current_stock:
@@ -145,32 +157,49 @@ class CustomerDashboard:
                 st.success("Item removed from cart.")
                 st.rerun()
 
-        st.markdown(f"### Total: ${total_cost:.2f}")
+        st.markdown(f"### Total: {format_price(total_cost)}")
 
-        col_checkout, col_clear = st.columns([2, 1])
-        if col_clear.button("Clear Cart", key="clear_cart_btn", type="secondary"):
-            SessionStateManager.clear_cart()
-            st.success("Cart cleared.")
-            st.rerun()
+        if SessionStateManager.is_cart_review():
+            st.markdown("#### Review your order before placing it")
+            for item in cart:
+                item_total = item["price"] * item["quantity"]
+                st.write(f"- {item['item_name']} x {item['quantity']} @ {format_price(item['price'])} = {format_price(item_total)}")
 
-        if col_checkout.button(
-            "Checkout",
-            key="checkout_tab2",
-            type="primary",
-            use_container_width=True
-        ):
-            result = self.manager.checkout(
-                cart,
-                user["email"]
-            )
-
-            if result == "Success":
-                self.save_all()
-                SessionStateManager.clear_cart()
-                SessionStateManager.set_order_success(True)
+            st.markdown(f"**Order Total:** {format_price(total_cost)}")
+            col_place, col_edit = st.columns([2, 1])
+            if col_edit.button("Edit Cart", key="edit_cart_btn", type="secondary"):
+                SessionStateManager.set_cart_review(False)
                 st.rerun()
-            else:
-                st.error(result)
+            if col_place.button("Place Order", key="place_order_btn", type="primary", use_container_width=True):
+                result = self.manager.checkout(
+                    cart,
+                    user["email"]
+                )
+
+                if result == "Success":
+                    self.save_all()
+                    SessionStateManager.clear_cart()
+                    SessionStateManager.set_cart_review(False)
+                    SessionStateManager.set_order_success(True)
+                    st.rerun()
+                else:
+                    st.error(result)
+        else:
+            col_review, col_clear = st.columns([2, 1])
+            if col_clear.button("Clear Cart", key="clear_cart_btn", type="secondary"):
+                SessionStateManager.clear_cart()
+                SessionStateManager.set_cart_review(False)
+                st.success("Cart cleared.")
+                st.rerun()
+
+            if col_review.button(
+                "Review Order",
+                key="review_order_btn",
+                type="primary",
+                use_container_width=True
+            ):
+                SessionStateManager.set_cart_review(True)
+                st.rerun()
 
 
     def my_orders(self, user):
@@ -180,20 +209,19 @@ class CustomerDashboard:
         if user_orders == []:
             st.info("No orders yet.")
         else:
-            st.table(user_orders)
+            self.render_order_cards(user_orders)
 
         edit_orders = self.manager.find_placed_orders_by_customer(user["email"])
 
         if edit_orders == []:
             st.info("No placed orders available to edit.")
-
         else:
             st.markdown("### Edit a Placed Order")
-            order_ids = []
-            for order in edit_orders:
-                order_ids.append(order["id"])
-
-            selected_order_id = st.selectbox("Select Order to Edit", order_ids)
+            selected_order = st.selectbox(
+                "Select Order to Edit",
+                options=edit_orders,
+                format_func=lambda order: f"{get_order_label(order)} — {order['item_name']} x {order['quantity']}"
+            )
 
             new_quantity = st.number_input(
                 "New Quantity",
@@ -209,7 +237,7 @@ class CustomerDashboard:
             ):
 
                 result = self.manager.update_order_quantity(
-                    selected_order_id,
+                    selected_order["id"],
                     new_quantity
                 )
 
@@ -217,10 +245,66 @@ class CustomerDashboard:
                     self.save_all()
                     st.success("Order updated!")
                     time.sleep(1)
-
                     st.rerun()
                 else:
                     st.error(result)
+
+
+    def render_order_cards(self, orders):
+        grouped_orders = {}
+        for order in orders:
+            key = order.get("order_number") or order.get("id")
+            grouped_orders.setdefault(key, []).append(order)
+
+        for order_label, order_lines in grouped_orders.items():
+            line_statuses = [line.get("status", "Unknown") for line in order_lines]
+            unique_statuses = [
+                status for status in [
+                    constants.ORDER_STATUS_PLACED,
+                    constants.ORDER_STATUS_SHIPPED,
+                    constants.ORDER_STATUS_COMPLETED,
+                    constants.ORDER_STATUS_CANCELLED,
+                ]
+                if status in line_statuses
+            ]
+
+            if len(set(line_statuses)) == 1:
+                overall_status = line_statuses[0]
+            else:
+                overall_status = "Mixed"
+
+            order_total = sum(line.get("total", 0) for line in order_lines)
+            item_count = sum(line.get("quantity", 0) for line in order_lines)
+
+            with st.container():
+                st.markdown(f"#### Order {order_label}")
+                cols = st.columns([3, 1])
+                cols[0].markdown(f"**Items:** {item_count}")
+                cols[0].markdown(f"**Order Total:** {format_price(order_total)}")
+                cols[1].markdown(f"**Status:** {overall_status}")
+
+                for status in unique_statuses:
+                    status_lines = [line for line in order_lines if line.get("status") == status]
+                    if not status_lines:
+                        continue
+
+                    st.markdown(f"**{status} Items**")
+                    for line in status_lines:
+                        line_total = line.get("price", 0) * line.get("quantity", 0)
+                        if status == constants.ORDER_STATUS_CANCELLED:
+                            st.markdown(
+                                f"- ~~{line.get('item_name', 'Unknown')}~~ x {line.get('quantity', 0)} @ {format_price(line.get('price', 0))} = {format_price(line_total)} "
+                                f"- {status}"
+                            )
+                        else:
+                            st.markdown(
+                                f"- {line.get('item_name', 'Unknown')} x {line.get('quantity', 0)} @ {format_price(line.get('price', 0))} = {format_price(line_total)} "
+                                f"- {status}"
+                            )
+
+                if constants.ORDER_STATUS_CANCELLED in unique_statuses and constants.ORDER_STATUS_PLACED in unique_statuses:
+                    st.info("Some items in this order were cancelled. Cancelled items are shown separately.")
+                st.markdown("---")
 
 
     def cancel_order(self, user):
@@ -231,13 +315,10 @@ class CustomerDashboard:
             st.info("No orders to cancel.")
 
         else:
-            order_ids = []
-            for order in placed_orders:
-                order_ids.append(order["id"])
-
-            selected_order_id = st.selectbox(
+            selected_order = st.selectbox(
                 "Select Order to Cancel",
-                order_ids
+                options=placed_orders,
+                format_func=lambda order: f"{get_order_label(order)} — {order['item_name']} x {order['quantity']}"
             )
 
             if st.button(
@@ -247,7 +328,7 @@ class CustomerDashboard:
                 use_container_width=True
             ):
 
-                result = self.manager.cancel_order(selected_order_id)
+                result = self.manager.cancel_order(selected_order["id"])
 
                 if result == "Success":
                     self.save_all()
@@ -295,31 +376,35 @@ class CustomerDashboard:
                     "content": "Hi! Ask me about menu items, your orders, or how to use the bakery app."
                 }
             ])
-            st.experimental_rerun()
+            st.rerun()
 
         for message in SessionStateManager.get_ai_messages():
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
         if user_input:
-            st.session_state["ai_messages"].append({
+            messages = SessionStateManager.get_ai_messages()
+            messages.append({
                 "role": "user",
                 "content": user_input
             })
+            SessionStateManager.set_ai_messages(messages)
 
             with st.chat_message("assistant"):
                 with st.spinner("Thinking..."):
                     ai_response = assistant.get_response(
-                        st.session_state["ai_messages"],
+                        SessionStateManager.get_ai_messages(),
                         user["email"]
                     )
 
                     st.markdown(ai_response)
 
-            st.session_state["ai_messages"].append({
+            messages = SessionStateManager.get_ai_messages()
+            messages.append({
                 "role": "assistant",
                 "content": ai_response
             })
+            SessionStateManager.set_ai_messages(messages)
 
             logs = assistant.load_logs()
             logs.append({
